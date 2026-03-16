@@ -3,6 +3,8 @@
 
 from dataclasses import dataclass
 from typing import List
+from src.utils.i18n import _t
+from src.config import get_config
 
 
 @dataclass(frozen=True)
@@ -46,8 +48,9 @@ class MarketStrategyBlueprint:
 
     def to_markdown_block(self) -> str:
         """Render blueprint as markdown section for template fallback report."""
+        lang = get_config().report_language or "en"
         dims = "\n".join([f"- **{dim.name}**: {dim.objective}" for dim in self.dimensions])
-        section_title = "### 六、策略框架" if self.region == "cn" else "### VI. Strategy Framework"
+        section_title = f"### {_t('strategy_framework', lang)}"
         return f"{section_title}\n{dims}\n"
 
 

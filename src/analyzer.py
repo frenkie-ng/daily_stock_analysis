@@ -30,6 +30,7 @@ from src.config import (
     get_configured_llm_models,
     resolve_news_window_days,
 )
+from src.utils.i18n import _t
 from src.storage import persist_llm_usage
 from src.data.stock_mapping import STOCK_NAME_MAP
 from src.schemas.report_schema import AnalysisReportSchema
@@ -886,7 +887,9 @@ class GeminiAnalyzer:
                 last_error = e
                 continue
 
-        raise Exception(f"All LLM models failed (tried {len(models_to_try)} model(s)). Last error: {last_error}")
+        lang = get_config().report_language or "en"
+        error_base = _t('all_models_failed', lang)
+        raise Exception(f"{error_base} (tried {len(models_to_try)} model(s)). Last error: {last_error}")
 
     def generate_text(
         self,
@@ -960,21 +963,24 @@ class GeminiAnalyzer:
                 name = context['realtime']['name']
             else:
                 # 最后从映射表获取
-                name = STOCK_NAME_MAP.get(code, f'股票{code}')
+                lang = get_config().report_language or "en"
+                prefix = _t("stocks_unit", lang).replace("stock(s)", "Stock") if lang != "zh" else "股票"
+                name = STOCK_NAME_MAP.get(code, f'{prefix}{code}')
         
         # 如果模型不可用，返回默认结果
         if not self.is_available():
+            lang = get_config().report_language or "en"
             return AnalysisResult(
                 code=code,
                 name=name,
                 sentiment_score=50,
-                trend_prediction='震荡',
-                operation_advice='持有',
-                confidence_level='低',
-                analysis_summary='AI 分析功能未启用（未配置 API Key）',
-                risk_warning='请配置 LLM API Key（GEMINI_API_KEY/ANTHROPIC_API_KEY/OPENAI_API_KEY）后重试',
+                trend_prediction=_t('sideways', lang),
+                operation_advice=_t('hold', lang),
+                confidence_level=_t('low', lang),
+                analysis_summary=_t('no_analysis', lang),
+                risk_warning=_t('analysis_failed', lang),
                 success=False,
-                error_message='LLM API Key 未配置',
+                error_message='LLM API Key not configured',
                 model_used=None,
             )
         
@@ -1296,25 +1302,27 @@ class GeminiAnalyzer:
     
     def _format_volume(self, volume: Optional[float]) -> str:
         """格式化成交量显示"""
+        lang = get_config().report_language or "en"
         if volume is None:
             return 'N/A'
         if volume >= 1e8:
-            return f"{volume / 1e8:.2f} 亿股"
+            return f"{volume / 1e8:.2f} {_t('unit_billion_shares', lang)}"
         elif volume >= 1e4:
-            return f"{volume / 1e4:.2f} 万股"
+            return f"{volume / 1e4:.2f} {_t('unit_million_shares', lang)}"
         else:
-            return f"{volume:.0f} 股"
+            return f"{volume:.0f} {_t('unit_shares', lang)}"
     
     def _format_amount(self, amount: Optional[float]) -> str:
         """格式化成交额显示"""
+        lang = get_config().report_language or "en"
         if amount is None:
             return 'N/A'
         if amount >= 1e8:
-            return f"{amount / 1e8:.2f} 亿元"
+            return f"{amount / 1e8:.2f} {_t('unit_billion_yuan', lang)}"
         elif amount >= 1e4:
-            return f"{amount / 1e4:.2f} 万元"
+            return f"{amount / 1e4:.2f} {_t('unit_million_yuan', lang)}"
         else:
-            return f"{amount:.0f} 元"
+            return f"{amount:.0f} {_t('unit_yuan', lang)}"
 
     def _format_percent(self, value: Optional[float]) -> str:
         """格式化百分比显示"""
@@ -1477,23 +1485,25 @@ class GeminiAnalyzer:
                 # 解析 decision_type，如果没有则根据 operation_advice 推断
                 decision_type = data.get('decision_type', '')
                 if not decision_type:
-                    op = data.get('operation_advice', '持有')
-                    if op in ['买入', '加仓', '强烈买入']:
+                    lang = get_config().report_language or "en"
+                    op = data.get('operation_advice', _t('hold', lang))
+                    if op in ['买入', '加仓', '强烈买入', 'Buy', 'Add Position', 'Strong Buy', 'Mua', 'Mua mạnh']:
                         decision_type = 'buy'
-                    elif op in ['卖出', '减仓', '强烈卖出']:
+                    elif op in ['卖出', '减仓', '强烈卖出', 'Sell', 'Reduce', 'Strong Sell', 'Bán', 'Bán mạnh']:
                         decision_type = 'sell'
                     else:
                         decision_type = 'hold'
                 
+                lang = get_config().report_language or "en"
                 return AnalysisResult(
                     code=code,
                     name=name,
                     # 核心指标
                     sentiment_score=int(data.get('sentiment_score', 50)),
-                    trend_prediction=data.get('trend_prediction', '震荡'),
-                    operation_advice=data.get('operation_advice', '持有'),
+                    trend_prediction=data.get('trend_prediction', _t('sideways', lang)),
+                    operation_advice=data.get('operation_advice', _t('hold', lang)),
                     decision_type=decision_type,
-                    confidence_level=data.get('confidence_level', '中'),
+                    confidence_level=data.get('confidence_level', _t('medium', lang)),
                     # 决策仪表盘
                     dashboard=dashboard,
                     # 走势分析
@@ -1558,36 +1568,36 @@ class GeminiAnalyzer:
         code: str, 
         name: str
     ) -> AnalysisResult:
-        """从纯文本响应中尽可能提取分析信息"""
+        lang = get_config().report_language or "en"
         # 尝试识别关键词来判断情绪
         sentiment_score = 50
-        trend = '震荡'
-        advice = '持有'
+        trend = _t('sideways', lang)
+        advice = _t('hold', lang)
         
         text_lower = response_text.lower()
         
         # 简单的情绪识别
-        positive_keywords = ['看多', '买入', '上涨', '突破', '强势', '利好', '加仓', 'bullish', 'buy']
-        negative_keywords = ['看空', '卖出', '下跌', '跌破', '弱势', '利空', '减仓', 'bearish', 'sell']
+        positive_keywords = ['看多', '买入', '上涨', '突破', '强势', '利好', '加仓', 'bullish', 'buy', 'tăng', 'mua']
+        negative_keywords = ['看空', '卖出', '下跌', '跌破', '弱势', '利空', '减仓', 'bearish', 'sell', 'giảm', 'bán']
         
         positive_count = sum(1 for kw in positive_keywords if kw in text_lower)
         negative_count = sum(1 for kw in negative_keywords if kw in text_lower)
         
         if positive_count > negative_count + 1:
             sentiment_score = 65
-            trend = '看多'
-            advice = '买入'
+            trend = _t('bullish_alignment', lang) # Use a bullish term
+            advice = _t('buy', lang)
             decision_type = 'buy'
         elif negative_count > positive_count + 1:
             sentiment_score = 35
-            trend = '看空'
-            advice = '卖出'
+            trend = _t('bearish_alignment', lang) # Use a bearish term
+            advice = _t('sell', lang)
             decision_type = 'sell'
         else:
             decision_type = 'hold'
         
         # 截取前500字符作为摘要
-        summary = response_text[:500] if response_text else '无分析结果'
+        summary = response_text[:500] if response_text else _t('no_analysis', lang)
         
         return AnalysisResult(
             code=code,
@@ -1596,7 +1606,7 @@ class GeminiAnalyzer:
             trend_prediction=trend,
             operation_advice=advice,
             decision_type=decision_type,
-            confidence_level='低',
+            confidence_level=_t('low', lang),
             analysis_summary=summary,
             key_points='JSON解析失败，仅供参考',
             risk_warning='分析结果可能不准确，建议结合其他信息判断',

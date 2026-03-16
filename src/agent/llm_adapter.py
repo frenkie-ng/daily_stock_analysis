@@ -16,6 +16,7 @@ import litellm
 from litellm import Router
 
 from src.config import get_config, get_api_keys_for_model, extra_litellm_params, get_configured_llm_models
+from src.utils.i18n import _t
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +265,8 @@ class LLMToolAdapter:
                 last_error = e
                 continue
 
-        error_msg = f"All LLM models failed. Last error: {last_error}"
+        lang = self._config.report_language or "en"
+        error_msg = f"{_t('all_models_failed', lang)}. Last error: {last_error}"
         logger.error(error_msg)
         return LLMResponse(content=error_msg, provider="error")
 

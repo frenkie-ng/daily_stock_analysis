@@ -26,6 +26,7 @@ from src.storage import get_db
 from data_provider import DataFetcherManager
 from data_provider.realtime_types import ChipDistribution
 from src.analyzer import GeminiAnalyzer, AnalysisResult, fill_chip_structure_if_needed, fill_price_position_if_needed
+from src.utils.i18n import _t
 from src.data.stock_mapping import STOCK_NAME_MAP
 from src.notification import NotificationService, NotificationChannel
 from src.search_service import SearchService
@@ -217,7 +218,8 @@ class StockAnalysisPipeline:
 
             # 如果还是没有名称，使用代码作为名称
             if not stock_name:
-                stock_name = f'股票{code}'
+                lang = self.config.report_language or "en"
+                stock_name = f"{_t('stock', lang)}{code}"
 
             # Step 2: 获取筹码分布 - 使用统一入口，带熔断保护
             chip_data = None
@@ -718,8 +720,8 @@ class StockAnalysisPipeline:
             code=code,
             name=stock_name,
             sentiment_score=50,
-            trend_prediction="未知",
-            operation_advice="观望",
+            trend_prediction=_t("unknown", self.config.report_language or "en"),
+            operation_advice=_t("watch", self.config.report_language or "en"),
             success=agent_result.success,
             error_message=agent_result.error or None,
             data_sources=f"agent:{agent_result.provider}",
@@ -732,8 +734,8 @@ class StockAnalysisPipeline:
             if ai_stock_name and self._is_placeholder_stock_name(stock_name, code):
                 result.name = ai_stock_name
             result.sentiment_score = self._safe_int(dash.get("sentiment_score"), 50)
-            result.trend_prediction = dash.get("trend_prediction", "未知")
-            raw_advice = dash.get("operation_advice", "观望")
+            result.trend_prediction = dash.get("trend_prediction", _t("unknown", self.config.report_language or "en"))
+            raw_advice = dash.get("operation_advice", _t("watch", self.config.report_language or "en"))
             if isinstance(raw_advice, dict):
                 # LLM may return {"no_position": "...", "has_position": "..."}
                 # Derive a short string from decision_type for the scalar field
@@ -744,9 +746,9 @@ class StockAnalysisPipeline:
                 # Normalize decision_type (strip/lower) before lookup so
                 # variants like "BUY" or " Buy " map correctly.
                 raw_dt = str(dash.get("decision_type") or "hold").strip().lower()
-                result.operation_advice = _signal_to_advice.get(raw_dt, "观望")
+                result.operation_advice = _signal_to_advice.get(raw_dt, _t("watch", self.config.report_language or "en"))
             else:
-                result.operation_advice = str(raw_advice) if raw_advice else "观望"
+                result.operation_advice = str(raw_advice) if raw_advice else _t("watch", self.config.report_language or "en")
             from src.agent.protocols import normalize_decision_signal
 
             result.decision_type = normalize_decision_signal(
@@ -760,9 +762,9 @@ class StockAnalysisPipeline:
             result.dashboard = dash.get("dashboard") or dash
         else:
             result.sentiment_score = 50
-            result.operation_advice = "观望"
+            result.operation_advice = _t("watch", self.config.report_language or "en")
             if not result.error_message:
-                result.error_message = "Agent 未能生成有效的决策仪表盘"
+                result.error_message = _t("agent_failed", self.config.report_language or "en")
 
         return result
 
@@ -776,9 +778,9 @@ class StockAnalysisPipeline:
             return True
         if normalized == code:
             return True
-        if normalized.startswith("股票"):
+        if normalized.startswith("股票") or normalized.startswith("Cổ phiếu") or normalized.startswith("Stock"):
             return True
-        if "Unknown" in normalized:
+        if "Unknown" in normalized or "Không xác định" in normalized or "未知" in normalized:
             return True
         return False
 

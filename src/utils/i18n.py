@@ -92,6 +92,11 @@ I18N_DICT: Dict[str, Dict[str, str]] = {
     "trend_regime": {"zh": "趋势结构", "en": "Trend Regime", "vi": "Cấu trúc xu hướng"},
     "capital_sentiment": {"zh": "资金情绪", "en": "Capital Sentiment", "vi": "Tâm lý dòng tiền"},
     "main_sectors": {"zh": "主线板块", "en": "Main Sectors", "vi": "Nhóm ngành chính"},
+    "all_models_failed": {"zh": "所有 AI 模型调用失败", "en": "All LLM models failed", "vi": "Tất cả mô hình AI đều thất bại"},
+    "config_api_key": {"zh": "请配置 API Key 后重试", "en": "Please configure API Key and retry", "vi": "Vui lòng cấu hình API Key và thử lại"},
+    "llm_key_not_configured": {"zh": "LLM API Key 未配置", "en": "LLM API Key not configured", "vi": "Chưa cấu hình LLM API Key"},
+    "stock": {"zh": "股票", "en": "Stock", "vi": "Cổ phiếu"},
+    "unknown": {"zh": "未知", "en": "Unknown", "vi": "Không xác định"},
 }
 
 def _t(key: str, lang: str = "en") -> str:
