@@ -647,78 +647,81 @@ Output the report content directly, no extra commentary.
     
     def _generate_template_review(self, overview: MarketOverview, news: List) -> str:
         """使用模板生成复盘报告（无大模型时的备选方案）"""
-        mood_code = self.profile.mood_index_code
-        # 根据 mood_index_code 查找对应指数
-        # cn: mood_code="000001"，idx.code 可能为 "sh000001"（以 mood_code 结尾）
-        # us: mood_code="SPX"，idx.code 直接为 "SPX"
-        mood_index = next(
-            (
-                idx
-                for idx in overview.indices
-                if idx.code == mood_code or idx.code.endswith(mood_code)
-            ),
-            None,
-        )
-        if mood_index:
-            if mood_index.change_pct > 1:
-                market_mood = "强势上涨"
-            elif mood_index.change_pct > 0:
-                market_mood = "小幅上涨"
-            elif mood_index.change_pct > -1:
-                market_mood = "小幅下跌"
-            else:
-                market_mood = "明显下跌"
-        else:
-            market_mood = "震荡整理"
+        lang = getattr(get_config(), 'report_language', 'en')
         
-        # 指数行情（简洁格式）
+        # Localized labels
+        _all_labels = {
+            'zh': {
+                'title': "大盘复盘", 'summary': "市场总结", 'indices': "主要指数", 'stats': "涨跌统计", 
+                'sector': "板块表现", 'risk': "风险提示", 'up': "上涨家数", 'down': "下跌家数", 
+                'lu': "涨停", 'ld': "跌停", 'amt': "成交额", 'bull': "强势上涨",
+                'sbull': "小幅上涨", 'sbear': "小幅下跌", 'bear': "明显下跌", 'side': "震荡整理",
+                'lead': "领涨", 'lag': "领跌", 'status': "态势", 'footer': "复盘时间",
+                'note': "市场有风险，投资需谨慎。", 'mkt': "A股" if self.region == "cn" else "美股"
+            },
+            'vi': {
+                'title': "Tổng kết thị trường", 'summary': "Tóm tắt thị trường", 'indices': "Chỉ số chính", 'stats': "Thống kê", 
+                'sector': "Hiệu suất ngành", 'risk': "Cảnh báo rủi ro", 'up': "Tăng", 'down': "Giảm", 
+                'lu': "Trần", 'ld': "Sàn", 'amt': "Giao dịch", 'bull': "Tăng mạnh",
+                'sbull': "Tăng nhẹ", 'sbear': "Giảm nhẹ", 'bear': "Giảm mạnh", 'side': "Đi ngang",
+                'lead': "Tăng tốt", 'lag': "Giảm sâu", 'status': "xu hướng", 'footer': "Thời gian",
+                'note': "Chứng khoán luôn tiềm ẩn rủi ro.", 'mkt': "thị trường"
+            },
+            'en': {
+                'title': "Market Review", 'summary': "Summary", 'indices': "Indices", 'stats': "Stats", 
+                'sector': "Sectors", 'risk': "Risk Alert", 'up': "Up", 'down': "Down", 
+                'lu': "Limit Up", 'ld': "Limit Down", 'amt': "Turnover", 'bull': "Bullish",
+                'sbull': "Slight Bull", 'sbear': "Slight Bear", 'bear': "Bearish", 'side': "Sideways",
+                'lead': "Leading", 'lag': "Lagging", 'status': "trend", 'footer': "Time",
+                'note': "Market involves risks.", 'mkt': "market"
+            }
+        }
+        _labels = _all_labels.get(lang, _all_labels['en'])
+
+        mood_code = self.profile.mood_index_code
+        mood_index = next((idx for idx in overview.indices if idx.code == mood_code or idx.code.endswith(mood_code)), None)
+        
+        if mood_index:
+            if mood_index.change_pct > 1: market_mood = _labels['bull']
+            elif mood_index.change_pct > 0: market_mood = _labels['sbull']
+            elif mood_index.change_pct > -1: market_mood = _labels['sbear']
+            else: market_mood = _labels['bear']
+        else:
+            market_mood = _labels['side']
+        
         indices_text = ""
         for idx in overview.indices[:4]:
             direction = "↑" if idx.change_pct > 0 else "↓" if idx.change_pct < 0 else "-"
             indices_text += f"- **{idx.name}**: {idx.current:.2f} ({direction}{abs(idx.change_pct):.2f}%)\n"
         
-        # 板块信息
         top_text = "、".join([s['name'] for s in overview.top_sectors[:3]])
         bottom_text = "、".join([s['name'] for s in overview.bottom_sectors[:3]])
         
-        # 按 region 决定是否包含涨跌统计和板块（美股无）
         stats_section = ""
         if self.profile.has_market_stats:
-            stats_section = f"""
-### 三、涨跌统计
-| 指标 | 数值 |
-|------|------|
-| 上涨家数 | {overview.up_count} |
-| 下跌家数 | {overview.down_count} |
-| 涨停 | {overview.limit_up_count} |
-| 跌停 | {overview.limit_down_count} |
-| 两市成交额 | {overview.total_amount:.0f}亿 |
-"""
-        sector_section = ""
-        if self.profile.has_sector_rankings and (top_text or bottom_text):
-            sector_section = f"""
-### 四、板块表现
-- **领涨**: {top_text}
-- **领跌**: {bottom_text}
-"""
-        market_label = "A股" if self.region == "cn" else "美股"
-        strategy_summary = self.strategy.to_markdown_block()
-        report = f"""## {overview.date} 大盘复盘
+            stats_section = f"### {_labels['stats']}\n| {_labels['up']} | {_labels['down']} | {_labels['lu']} | {_labels['ld']} | {_labels['amt']} |\n|---|---|---|---|---|\n| {overview.up_count} | {overview.down_count} | {overview.limit_up_count} | {overview.limit_down_count} | {overview.total_amount:.0f}B |\n"
 
-### 一、市场总结
-今日{market_label}市场整体呈现**{market_mood}**态势。
+        sector_section = f"### {_labels['sector']}\n- **{_labels['lead']}**: {top_text}\n- **{_labels['lag']}**: {bottom_text}\n" if (top_text or bottom_text) else ""
+        
+        report = f"""## {overview.date} {_labels['title']}
 
-### 二、主要指数
+### {_labels['summary']}
+Hôm nay, {_labels['mkt']} có {_labels['status']} **{market_mood}**.
+
+### {_labels['indices']}
 {indices_text}
-{stats_section}
-{sector_section}
-### 五、风险提示
-市场有风险，投资需谨慎。以上数据仅供参考，不构成投资建议。
 
-{strategy_summary}
+{stats_section}
+
+{sector_section}
+
+### {_labels['risk']}
+{_labels['note']}
+
+{self.strategy.to_markdown_block()}
 
 ---
-*复盘时间: {datetime.now().strftime('%H:%M')}*
+*{_labels['footer']}: {datetime.now().strftime('%H:%M')}*
 """
         return report
     

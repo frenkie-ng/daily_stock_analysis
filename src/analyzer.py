@@ -443,14 +443,12 @@ class AnalysisResult:
     def get_emoji(self) -> str:
         """根据操作建议返回对应 emoji"""
         emoji_map = {
-            '买入': '🟢',
-            '加仓': '🟢',
-            '强烈买入': '💚',
-            '持有': '🟡',
-            '观望': '⚪',
-            '减仓': '🟠',
-            '卖出': '🔴',
-            '强烈卖出': '❌',
+            # Chinese
+            '买入': '🟢', '加仓': '🟢', '强烈买入': '💚', '持有': '🟡', '观望': '⚪', '减仓': '🟠', '卖出': '🔴', '强烈卖出': '❌',
+            # Vietnamese
+            'Mua': '🟢', 'Tăng vị thế': '🟢', 'Mua mạnh': '💚', 'Giữ': '🟡', 'Theo dõi': '⚪', 'Giảm vị thế': '🟠', 'Bán': '🔴', 'Bán mạnh': '❌',
+            # English
+            'Buy': '🟢', 'Add Position': '🟢', 'Strong Buy': '💚', 'Hold': '🟡', 'Watch/Wait': '⚪', 'Reduce': '🟠', 'Sell': '🔴', 'Strong Sell': '❌'
         }
         advice = self.operation_advice or ''
         # Direct match first
@@ -807,39 +805,45 @@ class GeminiAnalyzer:
                 model_short = model.split("/")[-1] if "/" in model else model
                 # Inject language instruction based on REPORT_LANGUAGE env var
                 _lang = config.report_language if hasattr(config, "report_language") else "en"
+
                 _lang_instructions = {
                     "en": (
                         "\n\n## Output Language\n"
                         "You MUST write ALL text content in **English**. "
-                        "This includes all analysis, conclusions, recommendations, news summaries, risk alerts, and checklist items. "
-                        "Only keep stock codes and numeric values as-is.\n\n"
-                        "### Required English enum values (use EXACTLY these strings):\n"
+                        "This includes all analysis, conclusions, recommendations, news summaries, risk alerts, and checklist items.\n"
+                        "### Required English enum values:\n"
                         "- trend_prediction: 'Strongly Bullish' | 'Bullish' | 'Sideways/Consolidation' | 'Bearish' | 'Strongly Bearish'\n"
                         "- operation_advice: 'Strong Buy' | 'Buy' | 'Add Position' | 'Hold' | 'Reduce' | 'Sell' | 'Watch/Wait'\n"
-                        "- decision_type: 'buy' | 'hold' | 'sell'  (always lowercase English)\n"
-                        "- confidence_level: 'High' | 'Medium' | 'Low'\n"
-                        "- bias_status: 'Safe' | 'Caution' | 'Danger'\n"
-                        "- chip_health: 'Healthy' | 'Average' | 'Risky'\n"
-                        "- volume_status: 'High Volume' | 'Low Volume' | 'Normal'\n"
                     ),
                     "vi": (
                         "\n\n## Ngôn ngữ đầu ra\n"
-                        "Bạn PHẢI viết TẤT CẢ nội dung văn bản bằng **tiếng Việt**. "
-                        "Bao gồm phân tích, kết luận, khuyến nghị, tóm tắt tin tức, cảnh báo rủi ro, và danh sách kiểm tra. "
-                        "Chỉ giữ nguyên mã cổ phiếu và giá trị số.\n\n"
-                        "### Giá trị enum bắt buộc bằng tiếng Việt (dùng ĐÚNG các chuỗi này):\n"
+                        "Bạn PHẢI viết TẤT CẢ nội dung văn bản bằng **tiếng Việt**.\n"
+                        "### Giá trị enum bắt buộc bằng tiếng Việt:\n"
                         "- trend_prediction: 'Tăng mạnh' | 'Tăng' | 'Đi ngang' | 'Giảm' | 'Giảm mạnh'\n"
                         "- operation_advice: 'Mua mạnh' | 'Mua' | 'Tăng vị thế' | 'Giữ' | 'Giảm vị thế' | 'Bán' | 'Theo dõi'\n"
-                        "- decision_type: 'buy' | 'hold' | 'sell'  (luôn dùng tiếng Anh viết thường)\n"
-                        "- confidence_level: 'Cao' | 'Trung bình' | 'Thấp'\n"
-                        "- bias_status: 'An toàn' | 'Cảnh báo' | 'Nguy hiểm'\n"
-                        "- chip_health: 'Tốt' | 'Trung bình' | 'Xấu'\n"
-                        "- volume_status: 'Khối lượng lớn' | 'Khối lượng nhỏ' | 'Bình thường'\n"
                     ),
-                    "zh": "",  # Original Chinese — no extra instruction needed
+                    "zh": ""
                 }
+
+                # Localize entire system prompt if not Chinese
+                _base_prompt = self.SYSTEM_PROMPT
+                if _lang in ("en", "vi"):
+                    _tr = {
+                        "en": {
+                            "philosophy": "## Core Trading Philosophy\n1. Strictly No Chasing Highs: No buy if price > MA5 by 5%.\n2. Trend Following: MA5 > MA10 > MA20.\n3. Chip Efficiency: 90% concentration < 15%.\n4. Buy Points: Pullback to MA5/MA10.",
+                            "schema_intro": "## Output Format: Decision Dashboard JSON\nStrictly follow this structure:",
+                        },
+                        "vi": {
+                            "philosophy": "## Triết lý giao dịch cốt lõi\n1. Tuyệt đối không đu đỉnh: Không mua nếu giá > MA5 quá 5%.\n2. Thuận theo xu hướng: MA5 > MA10 > MA20.\n3. Cấu trúc chip: Độ tập trung 90% < 15%.\n4. Điểm mua: Hồi quy về MA5/MA10.",
+                            "schema_intro": "## Định dạng đầu ra: JSON Bảng Quyết Định\nTuân thủ nghiêm ngặt cấu trúc sau:",
+                        }
+                    }.get(_lang)
+                    _base_prompt = _base_prompt.replace("## 核心交易理念（必须严格遵守）", _tr["philosophy"])
+                    _base_prompt = _base_prompt.replace("## 输出格式：决策仪表盘 JSON", _tr["schema_intro"])
+                    _base_prompt = _base_prompt.replace("请严格按照以下 JSON 格式输出，这是一个完整的【决策仪表盘】：", "")
+
                 _lang_suffix = _lang_instructions.get(_lang, _lang_instructions["en"])
-                _system_prompt = self.SYSTEM_PROMPT + _lang_suffix
+                _system_prompt = _base_prompt + _lang_suffix
 
                 call_kwargs: Dict[str, Any] = {
                     "model": model,
@@ -856,15 +860,10 @@ class GeminiAnalyzer:
 
                 _router_model_names = set(get_configured_llm_models(config.llm_model_list))
                 if use_channel_router and self._router and model in _router_model_names:
-                    # Channel / YAML path: Router manages key + base_url per model
                     response = self._router.completion(**call_kwargs)
                 elif self._router and model == config.litellm_model and not use_channel_router:
-                    # Legacy path: Router only for primary model multi-key
                     response = self._router.completion(**call_kwargs)
                 else:
-                    # Legacy/direct-env path: direct call (also handles direct-env
-                    # providers like groq/ or bedrock/ that are not in the Router
-                    # model_list even when channel mode is active)
                     keys = get_api_keys_for_model(model, config)
                     if keys:
                         call_kwargs["api_key"] = keys[0]
