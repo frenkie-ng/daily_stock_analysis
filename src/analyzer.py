@@ -1524,13 +1524,13 @@ class GeminiAnalyzer:
                     market_sentiment=data.get('market_sentiment', ''),
                     hot_topics=data.get('hot_topics', ''),
                     # 综合
-                    analysis_summary=data.get('analysis_summary', '分析完成'),
+                    analysis_summary=data.get('analysis_summary', _t('analysis_done', lang)),
                     key_points=data.get('key_points', ''),
                     risk_warning=data.get('risk_warning', ''),
                     buy_reason=data.get('buy_reason', ''),
                     # 元数据
                     search_performed=data.get('search_performed', False),
-                    data_sources=data.get('data_sources', '技术面数据'),
+                    data_sources=data.get('data_sources', _t('tech_data', lang)),
                     success=True,
                 )
             else:
@@ -1608,8 +1608,8 @@ class GeminiAnalyzer:
             decision_type=decision_type,
             confidence_level=_t('low', lang),
             analysis_summary=summary,
-            key_points='JSON解析失败，仅供参考',
-            risk_warning='分析结果可能不准确，建议结合其他信息判断',
+            key_points=_t('json_fail_title', lang),
+            risk_warning=_t('json_fail_risk', lang),
             raw_response=response_text,
             success=True,
         )

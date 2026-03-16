@@ -52,7 +52,7 @@ def run_market_review(
     Returns:
         复盘报告文本
     """
-    logger.info("开始执行大盘复盘分析...")
+    logger.info("Starting market review analysis...")
     config = get_config()
     region = (
         override_region
@@ -71,9 +71,9 @@ def run_market_review(
             us_analyzer = MarketAnalyzer(
                 search_service=search_service, analyzer=analyzer, region='us'
             )
-            logger.info("生成 A 股大盘复盘报告...")
+            logger.info("Generating A-Share market review report...")
             cn_report = cn_analyzer.run_daily_review()
-            logger.info("生成美股大盘复盘报告...")
+            logger.info("Generating US market review report...")
             us_report = us_analyzer.run_daily_review()
             review_report = ''
             _title = _market_review_title()
@@ -120,6 +120,6 @@ def run_market_review(
             return review_report
         
     except Exception as e:
-        logger.error(f"大盘复盘分析失败: {e}")
+        logger.error(f"Market review analysis failed: {e}")
     
     return None

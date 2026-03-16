@@ -87,7 +87,7 @@ I18N_DICT: Dict[str, Dict[str, str]] = {
     "unit_yuan": {"zh": "元", "en": "CNY", "vi": "VNĐ/CNY"},
 
     # Strategy Framework (Market Recap)
-    "market_review_title": {"zh": "Tổng kết thị trường", "en": "Market Review", "vi": "Tổng kết thị trường"},
+    "market_review_title": {"zh": "大盘复盘", "en": "Market Review", "vi": "Tổng kết thị trường"},
     "strategy_framework": {"zh": "策略框架", "en": "Strategy Framework", "vi": "Khung chiến lược"},
     "trend_regime": {"zh": "趋势结构", "en": "Trend Regime", "vi": "Cấu trúc xu hướng"},
     "capital_sentiment": {"zh": "资金情绪", "en": "Capital Sentiment", "vi": "Tâm lý dòng tiền"},
@@ -97,6 +97,18 @@ I18N_DICT: Dict[str, Dict[str, str]] = {
     "llm_key_not_configured": {"zh": "LLM API Key 未配置", "en": "LLM API Key not configured", "vi": "Chưa cấu hình LLM API Key"},
     "stock": {"zh": "股票", "en": "Stock", "vi": "Cổ phiếu"},
     "unknown": {"zh": "未知", "en": "Unknown", "vi": "Không xác định"},
+    "tech_data": {"zh": "技术面数据", "en": "Technical Data", "vi": "Dữ liệu kỹ thuật"},
+    "json_fail_title": {"zh": "JSON解析失败，仅供参考", "en": "JSON Parse Failed (Ref Only)", "vi": "Lỗi phân tích JSON (Chỉ tham khảo)"},
+    "json_fail_risk": {"zh": "分析结果可能不准确，建议结合其他信息判断", "en": "Analysis may be inaccurate; verify with other sources", "vi": "Kết quả có thể không chính xác, vui lòng kiểm tra lại"},
+    
+    # Console/System Logs
+    "system_start": {"zh": "A股自选股智能分析系统 启动", "en": "Intelligent Stock Analysis System Started", "vi": "Hệ thống phân tích cổ phiếu thông minh khởi động"},
+    "runtime": {"zh": "运行时间", "en": "Runtime", "vi": "Thời gian chạy"},
+    "task_complete": {"zh": "任务执行完成", "en": "Task completed", "vi": "Nhiệm vụ hoàn thành"},
+    "analysis_summary_banner": {"zh": "分析结果摘要", "en": "Analysis Summary", "vi": "Tóm tắt kết quả phân tích"},
+    "skip_trading_day": {"zh": "今日所有相关市场均为非交易日，跳过执行", "en": "All markets closed today, skipping execution", "vi": "Tất cả thị trường đóng cửa hôm nay, bỏ qua thực hiện"},
+    "config_audit": {"zh": "配置文件审计", "en": "Config Audit", "vi": "Kiểm tra cấu hình"},
+    "mode": {"zh": "模式", "en": "Mode", "vi": "Chế độ"},
 }
 
 def _t(key: str, lang: str = "en") -> str:
