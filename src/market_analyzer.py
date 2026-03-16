@@ -531,30 +531,82 @@ Lagging: {bottom_sectors_text if bottom_sectors_text else "N/A"}"""
 Output the report content directly, no extra commentary.
 """
 
-        # A 股场景使用中文提示语
-        return f"""你是一位专业的A/H/美股市场分析师，请根据以下数据生成一份简洁的大盘复盘报告。
+        # A-share / CN prompt — language-aware based on REPORT_LANGUAGE
+        lang = getattr(get_config(), 'report_language', 'en')
+        if lang == 'vi':
+            _section = [
+                "I. Tóm tắt thị trường",
+                "II. Nhận xét chỉ số",
+                "III. Dòng tiền",
+                "IV. Phân tích ngành nóng",
+                "V. Triển vọng",
+                "VI. Cảnh báo rủi ro",
+                "VII. Kế hoạch chiến lược",
+            ]
+            _strategy_note = "Đưa ra lập trường tấn công/trung lập/phòng thủ, tỷ trọng vốn đề xuất, và một điều kiện vô hiệu hóa. Thêm: 'Khuyến nghị chỉ mang tính tham khảo, không phải tư vấn đầu tư.'"
+            _lang_instruction = "Bạn là một nhà phân tích thị trường chuyên nghiệp. Hãy tạo báo cáo tổng kết thị trường ngắn gọn bằng **tiếng Việt**."
+            _output_req = "[Yêu cầu]\n- Chỉ xuất Markdown thuần túy\n- Không JSON, không code block\n- Emoji ít dùng trong tiêu đề (tối đa 1/tiêu đề)"
+            _market_review_label = "Tổng kết thị trường"
+            _date_label = "Ngày"
+            _indices_label = "Chỉ số chính"
+            _news_label = "Tin tức thị trường"
+            _direct_output = "Xuất nội dung báo cáo trực tiếp, không thêm giải thích."
+        elif lang == 'zh':
+            _section = [
+                "一、市场总结",
+                "二、指数点评",
+                "三、资金动向",
+                "四、热点解读",
+                "五、后市展望",
+                "六、风险提示",
+                "七、策略计划",
+            ]
+            _strategy_note = "给出进攻/均衡/防守结论，对应仓位建议，并给出一个触发失效条件；最后补充“建议仅供参考，不构成投资建议”。"
+            _lang_instruction = "你是一位专业的A/H/美股市场分析师，请根据以下数据生成一份简洁的大盘复盘报告。"
+            _output_req = "【重要】输出要求：\n- 必须输出纯 Markdown 文本格式\n- 禁止输出 JSON 格式\n- 禁止输出代码块\n- emoji 仅在标题处少量使用（每个标题最多1个）"
+            _market_review_label = "大盘复盘"
+            _date_label = "日期"
+            _indices_label = "主要指数"
+            _news_label = "市场新闻"
+            _direct_output = "请直接输出复盘报告内容，不要输出其他说明文字。"
+        else:  # default: English
+            _section = [
+                "I. Market Summary",
+                "II. Index Commentary",
+                "III. Capital Flows",
+                "IV. Hot Sector Review",
+                "V. Market Outlook",
+                "VI. Risk Alerts",
+                "VII. Strategy Plan",
+            ]
+            _strategy_note = "Provide a risk-on/neutral/risk-off stance, position sizing guideline, and one invalidation trigger. Add: 'This is for reference only and does not constitute investment advice.'"
+            _lang_instruction = "You are a professional market analyst. Generate a concise market recap report in **English**."
+            _output_req = "[Requirements]\n- Output pure Markdown only\n- No JSON\n- No code blocks\n- Use emoji sparingly in headings (at most one per heading)"
+            _market_review_label = "Market Review"
+            _date_label = "Date"
+            _indices_label = "Major Indices"
+            _news_label = "Market News"
+            _direct_output = "Output the report content directly, no extra commentary."
 
-【重要】输出要求：
-- 必须输出纯 Markdown 文本格式
-- 禁止输出 JSON 格式
-- 禁止输出代码块
-- emoji 仅在标题处少量使用（每个标题最多1个）
+        return f"""{_lang_instruction}
+
+{_output_req}
 
 ---
 
-# 今日市场数据
+# Today's Market Data
 
-## 日期
+## {_date_label}
 {overview.date}
 
-## 主要指数
+## {_indices_label}
 {indices_placeholder}
 
 {stats_block}
 
 {sector_block}
 
-## 市场新闻
+## {_news_label}
 {news_placeholder}
 
 {data_no_indices_hint}
@@ -563,34 +615,34 @@ Output the report content directly, no extra commentary.
 
 ---
 
-# 输出格式模板（请严格按此格式输出）
+# Output Template (follow this structure)
 
-## {overview.date} 大盘复盘
+## {overview.date} {_market_review_label}
 
-### 一、市场总结
-（2-3句话概括今日市场整体表现，包括指数涨跌、成交量变化）
+### {_section[0]}
+(2-3 sentences on overall market performance, index moves, volume)
 
-### 二、指数点评
-（{self.profile.prompt_index_hint}）
+### {_section[1]}
+({self.profile.prompt_index_hint})
 
-### 三、资金动向
-（解读成交额流向的含义）
+### {_section[2]}
+(Interpret volume and capital flow implications)
 
-### 四、热点解读
-（分析领涨领跌板块背后的逻辑和驱动因素）
+### {_section[3]}
+(Analyze drivers behind leading/lagging sectors)
 
-### 五、后市展望
-（结合当前走势和新闻，给出明日市场预判）
+### {_section[4]}
+(Short-term view based on price action and news)
 
-### 六、风险提示
-（需要关注的风险点）
+### {_section[5]}
+(Key risks to watch)
 
-### 七、策略计划
-（给出进攻/均衡/防守结论，对应仓位建议，并给出一个触发失效条件；最后补充“建议仅供参考，不构成投资建议”。）
+### {_section[6]}
+({_strategy_note})
 
 ---
 
-请直接输出复盘报告内容，不要输出其他说明文字。
+{_direct_output}
 """
     
     def _generate_template_review(self, overview: MarketOverview, news: List) -> str:
