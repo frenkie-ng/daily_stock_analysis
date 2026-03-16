@@ -808,8 +808,34 @@ class GeminiAnalyzer:
                 # Inject language instruction based on REPORT_LANGUAGE env var
                 _lang = config.report_language if hasattr(config, "report_language") else "en"
                 _lang_instructions = {
-                    "en": "\n\n## Output Language\nYou MUST write ALL text content in **English**. This includes all analysis, conclusions, recommendations, news summaries, risk alerts, and checklist items. Only keep stock codes and numeric values as-is.",
-                    "vi": "\n\n## Ngôn ngữ đầu ra\nBạn PHẢI viết TẤT CẢ nội dung văn bản bằng **tiếng Việt**. Bao gồm phân tích, kết luận, khuyến nghị, tóm tắt tin tức, cảnh báo rủi ro, và danh sách kiểm tra. Chỉ giữ nguyên mã cổ phiếu và giá trị số.",
+                    "en": (
+                        "\n\n## Output Language\n"
+                        "You MUST write ALL text content in **English**. "
+                        "This includes all analysis, conclusions, recommendations, news summaries, risk alerts, and checklist items. "
+                        "Only keep stock codes and numeric values as-is.\n\n"
+                        "### Required English enum values (use EXACTLY these strings):\n"
+                        "- trend_prediction: 'Strongly Bullish' | 'Bullish' | 'Sideways/Consolidation' | 'Bearish' | 'Strongly Bearish'\n"
+                        "- operation_advice: 'Strong Buy' | 'Buy' | 'Add Position' | 'Hold' | 'Reduce' | 'Sell' | 'Watch/Wait'\n"
+                        "- decision_type: 'buy' | 'hold' | 'sell'  (always lowercase English)\n"
+                        "- confidence_level: 'High' | 'Medium' | 'Low'\n"
+                        "- bias_status: 'Safe' | 'Caution' | 'Danger'\n"
+                        "- chip_health: 'Healthy' | 'Average' | 'Risky'\n"
+                        "- volume_status: 'High Volume' | 'Low Volume' | 'Normal'\n"
+                    ),
+                    "vi": (
+                        "\n\n## Ngôn ngữ đầu ra\n"
+                        "Bạn PHẢI viết TẤT CẢ nội dung văn bản bằng **tiếng Việt**. "
+                        "Bao gồm phân tích, kết luận, khuyến nghị, tóm tắt tin tức, cảnh báo rủi ro, và danh sách kiểm tra. "
+                        "Chỉ giữ nguyên mã cổ phiếu và giá trị số.\n\n"
+                        "### Giá trị enum bắt buộc bằng tiếng Việt (dùng ĐÚNG các chuỗi này):\n"
+                        "- trend_prediction: 'Tăng mạnh' | 'Tăng' | 'Đi ngang' | 'Giảm' | 'Giảm mạnh'\n"
+                        "- operation_advice: 'Mua mạnh' | 'Mua' | 'Tăng vị thế' | 'Giữ' | 'Giảm vị thế' | 'Bán' | 'Theo dõi'\n"
+                        "- decision_type: 'buy' | 'hold' | 'sell'  (luôn dùng tiếng Anh viết thường)\n"
+                        "- confidence_level: 'Cao' | 'Trung bình' | 'Thấp'\n"
+                        "- bias_status: 'An toàn' | 'Cảnh báo' | 'Nguy hiểm'\n"
+                        "- chip_health: 'Tốt' | 'Trung bình' | 'Xấu'\n"
+                        "- volume_status: 'Khối lượng lớn' | 'Khối lượng nhỏ' | 'Bình thường'\n"
+                    ),
                     "zh": "",  # Original Chinese — no extra instruction needed
                 }
                 _lang_suffix = _lang_instructions.get(_lang, _lang_instructions["en"])
