@@ -40,6 +40,69 @@ from src.notification_sender import (
 
 logger = logging.getLogger(__name__)
 
+# ===================================
+# i18n: report UI string translations
+# ===================================
+_I18N: Dict[str, Dict[str, str]] = {
+    "dashboard_title": {"zh": "决策仪表盘", "en": "Decision Dashboard", "vi": "Bảng Quyết Định"},
+    "analyzed": {"zh": "共分析", "en": "Analyzed", "vi": "Đã phân tích"},
+    "stocks_unit": {"zh": "只股票", "en": "stock(s)", "vi": "cổ phiếu"},
+    "buy": {"zh": "买入", "en": "Buy", "vi": "Mua"},
+    "watch": {"zh": "观望", "en": "Watch", "vi": "Theo dõi"},
+    "sell": {"zh": "卖出", "en": "Sell", "vi": "Bán"},
+    "summary_title": {"zh": "分析结果摘要", "en": "Summary", "vi": "Tóm tắt"},
+    "score": {"zh": "评分", "en": "Score", "vi": "Điểm"},
+    "news_section": {"zh": "重要信息速览", "en": "Key Intelligence", "vi": "Tin tức quan trọng"},
+    "sentiment": {"zh": "舆情情绪", "en": "Sentiment", "vi": "Cảm xúc thị trường"},
+    "earnings": {"zh": "业绩预期", "en": "Earnings Outlook", "vi": "Triển vọng lợi nhuận"},
+    "risks": {"zh": "风险警报", "en": "Risk Alerts", "vi": "Cảnh báo rủi ro"},
+    "catalysts": {"zh": "利好催化", "en": "Positive Catalysts", "vi": "Điểm tích cực"},
+    "latest_news": {"zh": "最新动态", "en": "Latest News", "vi": "Tin mới nhất"},
+    "core_conclusion": {"zh": "核心结论", "en": "Core Conclusion", "vi": "Kết luận cốt lõi"},
+    "one_sentence": {"zh": "一句话决策", "en": "Key Decision", "vi": "Quyết định then chốt"},
+    "time_sensitivity": {"zh": "时效性", "en": "Time Sensitivity", "vi": "Độ khẩn cấp"},
+    "position_table_header": {"zh": "持仓情况", "en": "Position", "vi": "Vị thế"},
+    "advice_header": {"zh": "操作建议", "en": "Advice", "vi": "Khuyến nghị"},
+    "no_position": {"zh": "空仓者", "en": "No Position", "vi": "Chưa có vị thế"},
+    "has_position": {"zh": "持仓者", "en": "Has Position", "vi": "Đang giữ cổ phiếu"},
+    "data_section": {"zh": "数据透视", "en": "Data Analysis", "vi": "Phân tích dữ liệu"},
+    "battle_section": {"zh": "作战计划", "en": "Action Plan", "vi": "Kế hoạch hành động"},
+    "sniper_title": {"zh": "狙击点位", "en": "Entry/Exit Points", "vi": "Điểm vào/ra"},
+    "ideal_buy": {"zh": "理想买入点", "en": "Ideal Buy", "vi": "Điểm mua lý tưởng"},
+    "secondary_buy": {"zh": "次优买入点", "en": "Alt Buy", "vi": "Điểm mua thứ 2"},
+    "stop_loss": {"zh": "止损位", "en": "Stop Loss", "vi": "Cắt lỗ"},
+    "take_profit": {"zh": "目标位", "en": "Target", "vi": "Mục tiêu"},
+    "position_strategy": {"zh": "仓位建议", "en": "Position Sizing", "vi": "Tỷ trọng vốn"},
+    "checklist": {"zh": "检查清单", "en": "Checklist", "vi": "Danh sách kiểm tra"},
+    "generated_at": {"zh": "报告生成时间", "en": "Generated", "vi": "Thời gian tạo"},
+    "model_used": {"zh": "分析模型", "en": "Model", "vi": "Mô hình AI"},
+    "bullish": {"zh": "是", "en": "Yes", "vi": "Có"},
+    "not_bullish": {"zh": "否", "en": "No", "vi": "Không"},
+    "trend_strength": {"zh": "趋势强度", "en": "Trend Strength", "vi": "Sức mạnh xu hướng"},
+    "current_price": {"zh": "当前价", "en": "Price", "vi": "Giá hiện tại"},
+    "bias_rate": {"zh": "乖离率(MA5)", "en": "Bias(MA5)", "vi": "Lệch giá(MA5)"},
+    "support": {"zh": "支撑位", "en": "Support", "vi": "Hỗ trợ"},
+    "resistance": {"zh": "压力位", "en": "Resistance", "vi": "Kháng cự"},
+    "volume": {"zh": "量能", "en": "Volume", "vi": "Khối lượng"},
+    "chip": {"zh": "筹码", "en": "Chip Structure", "vi": "Cấu trúc phân bổ"},
+    "profit_ratio": {"zh": "获利比例", "en": "Profit Ratio", "vi": "Tỷ lệ lãi"},
+    "avg_cost": {"zh": "平均成本", "en": "Avg Cost", "vi": "Giá vốn TB"},
+    "concentration": {"zh": "集中度", "en": "Concentration", "vi": "Tập trung"},
+    "failed_checks": {"zh": "检查未通过项", "en": "Failed Checks", "vi": "Mục chưa đạt"},
+    "ma_alignment": {"zh": "均线排列", "en": "MA Alignment", "vi": "Xếp hạng MA"},
+    "bullish_alignment": {"zh": "多头排列", "en": "Bullish Alignment", "vi": "Xu hướng tăng"},
+}
+
+
+def _t(key: str) -> str:
+    """Translate a UI label key based on REPORT_LANGUAGE config."""
+    try:
+        lang = get_config().report_language or "en"
+    except Exception:
+        lang = "en"
+    translations = _I18N.get(key, {})
+    return translations.get(lang, translations.get("en", key))
+
 
 class NotificationChannel(Enum):
     """通知渠道类型"""
@@ -795,16 +858,16 @@ class NotificationService(
         hold_count = sum(1 for r in results if getattr(r, 'decision_type', '') in ('hold', ''))
 
         report_lines = [
-            f"# 🎯 {report_date} 决策仪表盘",
+            f"# 🎯 {report_date} {_t('dashboard_title')}",
             "",
-            f"> 共分析 **{len(results)}** 只股票 | 🟢买入:{buy_count} 🟡观望:{hold_count} 🔴卖出:{sell_count}",
+            f"> {_t('analyzed')} **{len(results)}** {_t('stocks_unit')} | 🟢{_t('buy')}:{buy_count} 🟡{_t('watch')}:{hold_count} 🔴{_t('sell')}:{sell_count}",
             "",
         ]
 
         # === 新增：分析结果摘要 (Issue #112) ===
         if results:
             report_lines.extend([
-                "## 📊 分析结果摘要",
+                f"## 📊 {_t('summary_title')}",
                 "",
             ])
             for r in sorted_results:
@@ -812,7 +875,7 @@ class NotificationService(
                 display_name = self._escape_md(r.name)
                 report_lines.append(
                     f"{signal_emoji} **{display_name}({r.code})**: {r.operation_advice} | "
-                    f"评分 {r.sentiment_score} | {r.trend_prediction}"
+                    f"{_t('score')} {r.sentiment_score} | {r.trend_prediction}"
                 )
             report_lines.extend([
                 "",
@@ -839,33 +902,28 @@ class NotificationService(
                 intel = dashboard.get('intelligence', {}) if dashboard else {}
                 if intel:
                     report_lines.extend([
-                        "### 📰 重要信息速览",
-                        "",
-                    ])
-                    # 舆情情绪总结
-                    if intel.get('sentiment_summary'):
-                        report_lines.append(f"**💭 舆情情绪**: {intel['sentiment_summary']}")
-                    # 业绩预期
-                    if intel.get('earnings_outlook'):
-                        report_lines.append(f"**📊 业绩预期**: {intel['earnings_outlook']}")
-                    # 风险警报（醒目显示）
-                    risk_alerts = intel.get('risk_alerts', [])
-                    if risk_alerts:
-                        report_lines.append("")
-                        report_lines.append("**🚨 风险警报**:")
-                        for alert in risk_alerts:
-                            report_lines.append(f"- {alert}")
-                    # 利好催化
-                    catalysts = intel.get('positive_catalysts', [])
-                    if catalysts:
-                        report_lines.append("")
-                        report_lines.append("**✨ 利好催化**:")
-                        for cat in catalysts:
-                            report_lines.append(f"- {cat}")
-                    # 最新消息
-                    if intel.get('latest_news'):
-                        report_lines.append("")
-                        report_lines.append(f"**📢 最新动态**: {intel['latest_news']}")
+                    f"### 📰 {_t('news_section')}",
+                    "",
+                ])
+                if intel.get('sentiment_summary'):
+                    report_lines.append(f"**💭 {_t('sentiment')}**: {intel['sentiment_summary']}")
+                if intel.get('earnings_outlook'):
+                    report_lines.append(f"**📊 {_t('earnings')}**: {intel['earnings_outlook']}")
+                risk_alerts = intel.get('risk_alerts', [])
+                if risk_alerts:
+                    report_lines.append("")
+                    report_lines.append(f"**🚨 {_t('risks')}**:")
+                    for alert in risk_alerts:
+                        report_lines.append(f"- {alert}")
+                catalysts = intel.get('positive_catalysts', [])
+                if catalysts:
+                    report_lines.append("")
+                    report_lines.append(f"**✨ {_t('catalysts')}**:")
+                    for cat in catalysts:
+                        report_lines.append(f"- {cat}")
+                if intel.get('latest_news'):
+                    report_lines.append("")
+                    report_lines.append(f"**📢 {_t('latest_news')}**: {intel['latest_news']}")
                     report_lines.append("")
                 
                 # ========== 核心结论 ==========
@@ -875,22 +933,21 @@ class NotificationService(
                 pos_advice = core.get('position_advice', {})
                 
                 report_lines.extend([
-                    "### 📌 核心结论",
+                    f"### 📌 {_t('core_conclusion')}",
                     "",
                     f"**{signal_emoji} {signal_text}** | {result.trend_prediction}",
                     "",
-                    f"> **一句话决策**: {one_sentence}",
+                    f"> **{_t('one_sentence')}**: {one_sentence}",
                     "",
-                    f"⏰ **时效性**: {time_sense}",
+                    f"⏰ **{_t('time_sensitivity')}**: {time_sense}",
                     "",
                 ])
-                # 持仓分类建议
                 if pos_advice:
                     report_lines.extend([
-                        "| 持仓情况 | 操作建议 |",
+                        f"| {_t('position_table_header')} | {_t('advice_header')} |",
                         "|---------|---------|",
-                        f"| 🆕 **空仓者** | {pos_advice.get('no_position', result.operation_advice)} |",
-                        f"| 💼 **持仓者** | {pos_advice.get('has_position', '继续持有')} |",
+                        f"| 🆕 **{_t('no_position')}** | {pos_advice.get('no_position', result.operation_advice)} |",
+                        f"| 💼 **{_t('has_position')}** | {pos_advice.get('has_position', result.operation_advice)} |",
                         "",
                     ])
 
@@ -905,14 +962,13 @@ class NotificationService(
                     chip_data = data_persp.get('chip_structure', {})
                     
                     report_lines.extend([
-                        "### 📊 数据透视",
+                        f"### 📊 {_t('data_section')}",
                         "",
                     ])
-                    # 趋势状态
                     if trend_data:
-                        is_bullish = "✅ 是" if trend_data.get('is_bullish', False) else "❌ 否"
+                        is_bullish = f"✅ {_t('bullish')}" if trend_data.get('is_bullish', False) else f"❌ {_t('not_bullish')}"
                         report_lines.extend([
-                            f"**均线排列**: {trend_data.get('ma_alignment', 'N/A')} | 多头排列: {is_bullish} | 趋势强度: {trend_data.get('trend_score', 'N/A')}/100",
+                            f"**{_t('ma_alignment')}**: {trend_data.get('ma_alignment', 'N/A')} | {_t('bullish_alignment')}: {is_bullish} | {_t('trend_strength')}: {trend_data.get('trend_score', 'N/A')}/100",
                             "",
                         ])
                     # 价格位置
@@ -920,30 +976,28 @@ class NotificationService(
                         bias_status = price_data.get('bias_status', 'N/A')
                         bias_emoji = "✅" if bias_status == "安全" else ("⚠️" if bias_status == "警戒" else "🚨")
                         report_lines.extend([
-                            "| 价格指标 | 数值 |",
+                            f"| Indicator | Value |",
                             "|---------|------|",
-                            f"| 当前价 | {price_data.get('current_price', 'N/A')} |",
+                            f"| {_t('current_price')} | {price_data.get('current_price', 'N/A')} |",
                             f"| MA5 | {price_data.get('ma5', 'N/A')} |",
                             f"| MA10 | {price_data.get('ma10', 'N/A')} |",
                             f"| MA20 | {price_data.get('ma20', 'N/A')} |",
-                            f"| 乖离率(MA5) | {price_data.get('bias_ma5', 'N/A')}% {bias_emoji}{bias_status} |",
-                            f"| 支撑位 | {price_data.get('support_level', 'N/A')} |",
-                            f"| 压力位 | {price_data.get('resistance_level', 'N/A')} |",
+                            f"| {_t('bias_rate')} | {price_data.get('bias_ma5', 'N/A')}% {bias_emoji}{bias_status} |",
+                            f"| {_t('support')} | {price_data.get('support_level', 'N/A')} |",
+                            f"| {_t('resistance')} | {price_data.get('resistance_level', 'N/A')} |",
                             "",
                         ])
-                    # 量能分析
                     if vol_data:
                         report_lines.extend([
-                            f"**量能**: 量比 {vol_data.get('volume_ratio', 'N/A')} ({vol_data.get('volume_status', '')}) | 换手率 {vol_data.get('turnover_rate', 'N/A')}%",
+                            f"**{_t('volume')}**: {vol_data.get('volume_ratio', 'N/A')} ({vol_data.get('volume_status', '')}) | Turnover {vol_data.get('turnover_rate', 'N/A')}%",
                             f"💡 *{vol_data.get('volume_meaning', '')}*",
                             "",
                         ])
-                    # 筹码结构
                     if chip_data:
                         chip_health = chip_data.get('chip_health', 'N/A')
-                        chip_emoji = "✅" if chip_health == "健康" else ("⚠️" if chip_health == "一般" else "🚨")
+                        chip_emoji = "✅" if chip_health in ("健康", "Healthy", "Tốt") else ("⚠️" if chip_health in ("一般", "Average", "Trung bình") else "🚨")
                         report_lines.extend([
-                            f"**筹码**: 获利比例 {chip_data.get('profit_ratio', 'N/A')} | 平均成本 {chip_data.get('avg_cost', 'N/A')} | 集中度 {chip_data.get('concentration', 'N/A')} {chip_emoji}{chip_health}",
+                            f"**{_t('chip')}**: {_t('profit_ratio')} {chip_data.get('profit_ratio', 'N/A')} | {_t('avg_cost')} {chip_data.get('avg_cost', 'N/A')} | {_t('concentration')} {chip_data.get('concentration', 'N/A')} {chip_emoji}{chip_health}",
                             "",
                         ])
                 
@@ -951,37 +1005,34 @@ class NotificationService(
                 battle = dashboard.get('battle_plan', {}) if dashboard else {}
                 if battle:
                     report_lines.extend([
-                        "### 🎯 作战计划",
+                        f"### 🎯 {_t('battle_section')}",
                         "",
                     ])
-                    # 狙击点位
                     sniper = battle.get('sniper_points', {})
                     if sniper:
                         report_lines.extend([
-                            "**📍 狙击点位**",
+                            f"**📍 {_t('sniper_title')}**",
                             "",
-                            "| 点位类型 | 价格 |",
+                            f"| Type | Price |",
                             "|---------|------|",
-                            f"| 🎯 理想买入点 | {self._clean_sniper_value(sniper.get('ideal_buy', 'N/A'))} |",
-                            f"| 🔵 次优买入点 | {self._clean_sniper_value(sniper.get('secondary_buy', 'N/A'))} |",
-                            f"| 🛑 止损位 | {self._clean_sniper_value(sniper.get('stop_loss', 'N/A'))} |",
-                            f"| 🎊 目标位 | {self._clean_sniper_value(sniper.get('take_profit', 'N/A'))} |",
+                            f"| 🎯 {_t('ideal_buy')} | {self._clean_sniper_value(sniper.get('ideal_buy', 'N/A'))} |",
+                            f"| 🔵 {_t('secondary_buy')} | {self._clean_sniper_value(sniper.get('secondary_buy', 'N/A'))} |",
+                            f"| 🛑 {_t('stop_loss')} | {self._clean_sniper_value(sniper.get('stop_loss', 'N/A'))} |",
+                            f"| 🎊 {_t('take_profit')} | {self._clean_sniper_value(sniper.get('take_profit', 'N/A'))} |",
                             "",
                         ])
-                    # 仓位策略
                     position = battle.get('position_strategy', {})
                     if position:
                         report_lines.extend([
-                            f"**💰 仓位建议**: {position.get('suggested_position', 'N/A')}",
-                            f"- 建仓策略: {position.get('entry_plan', 'N/A')}",
-                            f"- 风控策略: {position.get('risk_control', 'N/A')}",
+                            f"**💰 {_t('position_strategy')}**: {position.get('suggested_position', 'N/A')}",
+                            f"- {position.get('entry_plan', 'N/A')}",
+                            f"- {position.get('risk_control', 'N/A')}",
                             "",
                         ])
-                    # 检查清单
                     checklist = battle.get('action_checklist', []) if battle else []
                     if checklist:
                         report_lines.extend([
-                            "**✅ 检查清单**",
+                            f"**✅ {_t('checklist')}**",
                             "",
                         ])
                         for item in checklist:
@@ -1069,22 +1120,21 @@ class NotificationService(
         hold_count = sum(1 for r in results if getattr(r, 'decision_type', '') in ('hold', ''))
         
         lines = [
-            f"## 🎯 {report_date} 决策仪表盘",
+            f"## 🎯 {report_date} {_t('dashboard_title')}",
             "",
-            f"> {len(results)}只股票 | 🟢买入:{buy_count} 🟡观望:{hold_count} 🔴卖出:{sell_count}",
+            f"> {len(results)} {_t('stocks_unit')} | 🟢{_t('buy')}:{buy_count} 🟡{_t('watch')}:{hold_count} 🔴{_t('sell')}:{sell_count}",
             "",
         ]
         
-        # Issue #262: summary_only 时仅输出摘要列表
         if self._report_summary_only:
-            lines.append("**📊 分析结果摘要**")
+            lines.append(f"**📊 {_t('summary_title')}**")
             lines.append("")
             for r in sorted_results:
                 _, signal_emoji, _ = self._get_signal_level(r)
                 stock_name = self._escape_md(r.name if r.name and not r.name.startswith('股票') else f'股票{r.code}')
                 lines.append(
                     f"{signal_emoji} **{stock_name}({r.code})**: {r.operation_advice} | "
-                    f"评分 {r.sentiment_score} | {r.trend_prediction}"
+                    f"{_t('score')} {r.sentiment_score} | {r.trend_prediction}"
                 )
         else:
             for result in sorted_results:
@@ -1185,10 +1235,10 @@ class NotificationService(
                 lines.append("")
         
         # 底部
-        lines.append(f"*生成时间: {datetime.now().strftime('%H:%M')}*")
+        lines.append(f"*{_t('generated_at')}: {datetime.now().strftime('%H:%M')}*")
         models = self._collect_models_used(results)
         if models:
-            lines.append(f"*分析模型: {', '.join(models)}*")
+            lines.append(f"*{_t('model_used')}: {', '.join(models)}*")
 
         content = "\n".join(lines)
         
