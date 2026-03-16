@@ -21,6 +21,12 @@ from src.search_service import SearchService
 from src.analyzer import GeminiAnalyzer
 
 
+def _market_review_title() -> str:
+    """Return translated market review title based on REPORT_LANGUAGE."""
+    lang = getattr(get_config(), 'report_language', 'en')
+    return {'zh': '大盘复盘', 'vi': 'Tổng kết thị trường', 'en': 'Market Review'}.get(lang, 'Market Review')
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,12 +76,13 @@ def run_market_review(
             logger.info("生成美股大盘复盘报告...")
             us_report = us_analyzer.run_daily_review()
             review_report = ''
+            _title = _market_review_title()
             if cn_report:
-                review_report = f"# A股大盘复盘\n\n{cn_report}"
+                review_report = f"# {_title} (A-Share)\n\n{cn_report}"
             if us_report:
                 if review_report:
-                    review_report += "\n\n---\n\n> 以下为美股大盘复盘\n\n"
-                review_report += f"# 美股大盘复盘\n\n{us_report}"
+                    review_report += f"\n\n---\n\n> US {_title}\n\n"
+                review_report += f"# {_title} (US)\n\n{us_report}"
             if not review_report:
                 review_report = None
         else:
@@ -90,18 +97,17 @@ def run_market_review(
             # 保存报告到文件
             date_str = datetime.now().strftime('%Y%m%d')
             report_filename = f"market_review_{date_str}.md"
+            _title = _market_review_title()
             filepath = notifier.save_report_to_file(
-                f"# 🎯 大盘复盘\n\n{review_report}", 
+                f"# 🎯 {_title}\n\n{review_report}",
                 report_filename
             )
-            logger.info(f"大盘复盘报告已保存: {filepath}")
-            
-            # 推送通知（合并模式下跳过，由 main 层统一发送）
+            logger.info(f"Market review report saved: {filepath}")
+
             if merge_notification and send_notification:
-                logger.info("合并推送模式：跳过大盘复盘单独推送，将在个股+大盘复盘后统一发送")
+                logger.info("Merge mode: skipping market review push, will send combined later")
             elif send_notification and notifier.is_available():
-                # 添加标题
-                report_content = f"🎯 大盘复盘\n\n{review_report}"
+                report_content = f"🎯 {_title}\n\n{review_report}"
 
                 success = notifier.send(report_content, email_send_to_all=True)
                 if success:
