@@ -38,70 +38,12 @@ from src.notification_sender import (
     WECHAT_IMAGE_MAX_BYTES
 )
 
+from src.utils.i18n import _t, I18N_DICT
+
 logger = logging.getLogger(__name__)
 
-# ===================================
-# i18n: report UI string translations
-# ===================================
-_I18N: Dict[str, Dict[str, str]] = {
-    "dashboard_title": {"zh": "决策仪表盘", "en": "Decision Dashboard", "vi": "Bảng Quyết Định"},
-    "analyzed": {"zh": "共分析", "en": "Analyzed", "vi": "Đã phân tích"},
-    "stocks_unit": {"zh": "只股票", "en": "stock(s)", "vi": "cổ phiếu"},
-    "buy": {"zh": "买入", "en": "Buy", "vi": "Mua"},
-    "watch": {"zh": "观望", "en": "Watch", "vi": "Theo dõi"},
-    "sell": {"zh": "卖出", "en": "Sell", "vi": "Bán"},
-    "summary_title": {"zh": "分析结果摘要", "en": "Summary", "vi": "Tóm tắt"},
-    "score": {"zh": "评分", "en": "Score", "vi": "Điểm"},
-    "news_section": {"zh": "重要信息速览", "en": "Key Intelligence", "vi": "Tin tức quan trọng"},
-    "sentiment": {"zh": "舆情情绪", "en": "Sentiment", "vi": "Cảm xúc thị trường"},
-    "earnings": {"zh": "业绩预期", "en": "Earnings Outlook", "vi": "Triển vọng lợi nhuận"},
-    "risks": {"zh": "风险警报", "en": "Risk Alerts", "vi": "Cảnh báo rủi ro"},
-    "catalysts": {"zh": "利好催化", "en": "Positive Catalysts", "vi": "Điểm tích cực"},
-    "latest_news": {"zh": "最新动态", "en": "Latest News", "vi": "Tin mới nhất"},
-    "core_conclusion": {"zh": "核心结论", "en": "Core Conclusion", "vi": "Kết luận cốt lõi"},
-    "one_sentence": {"zh": "一句话决策", "en": "Key Decision", "vi": "Quyết định then chốt"},
-    "time_sensitivity": {"zh": "时效性", "en": "Time Sensitivity", "vi": "Độ khẩn cấp"},
-    "position_table_header": {"zh": "持仓情况", "en": "Position", "vi": "Vị thế"},
-    "advice_header": {"zh": "操作建议", "en": "Advice", "vi": "Khuyến nghị"},
-    "no_position": {"zh": "空仓者", "en": "No Position", "vi": "Chưa có vị thế"},
-    "has_position": {"zh": "持仓者", "en": "Has Position", "vi": "Đang giữ cổ phiếu"},
-    "data_section": {"zh": "数据透视", "en": "Data Analysis", "vi": "Phân tích dữ liệu"},
-    "battle_section": {"zh": "作战计划", "en": "Action Plan", "vi": "Kế hoạch hành động"},
-    "sniper_title": {"zh": "狙击点位", "en": "Entry/Exit Points", "vi": "Điểm vào/ra"},
-    "ideal_buy": {"zh": "理想买入点", "en": "Ideal Buy", "vi": "Điểm mua lý tưởng"},
-    "secondary_buy": {"zh": "次优买入点", "en": "Alt Buy", "vi": "Điểm mua thứ 2"},
-    "stop_loss": {"zh": "止损位", "en": "Stop Loss", "vi": "Cắt lỗ"},
-    "take_profit": {"zh": "目标位", "en": "Target", "vi": "Mục tiêu"},
-    "position_strategy": {"zh": "仓位建议", "en": "Position Sizing", "vi": "Tỷ trọng vốn"},
-    "checklist": {"zh": "检查清单", "en": "Checklist", "vi": "Danh sách kiểm tra"},
-    "generated_at": {"zh": "报告生成时间", "en": "Generated", "vi": "Thời gian tạo"},
-    "model_used": {"zh": "分析模型", "en": "Model", "vi": "Mô hình AI"},
-    "bullish": {"zh": "是", "en": "Yes", "vi": "Có"},
-    "not_bullish": {"zh": "否", "en": "No", "vi": "Không"},
-    "trend_strength": {"zh": "趋势强度", "en": "Trend Strength", "vi": "Sức mạnh xu hướng"},
-    "current_price": {"zh": "当前价", "en": "Price", "vi": "Giá hiện tại"},
-    "bias_rate": {"zh": "乖离率(MA5)", "en": "Bias(MA5)", "vi": "Lệch giá(MA5)"},
-    "support": {"zh": "支撑位", "en": "Support", "vi": "Hỗ trợ"},
-    "resistance": {"zh": "压力位", "en": "Resistance", "vi": "Kháng cự"},
-    "volume": {"zh": "量能", "en": "Volume", "vi": "Khối lượng"},
-    "chip": {"zh": "筹码", "en": "Chip Structure", "vi": "Cấu trúc phân bổ"},
-    "profit_ratio": {"zh": "获利比例", "en": "Profit Ratio", "vi": "Tỷ lệ lãi"},
-    "avg_cost": {"zh": "平均成本", "en": "Avg Cost", "vi": "Giá vốn TB"},
-    "concentration": {"zh": "集中度", "en": "Concentration", "vi": "Tập trung"},
-    "failed_checks": {"zh": "检查未通过项", "en": "Failed Checks", "vi": "Mục chưa đạt"},
-    "ma_alignment": {"zh": "均线排列", "en": "MA Alignment", "vi": "Xếp hạng MA"},
-    "bullish_alignment": {"zh": "多头排列", "en": "Bullish Alignment", "vi": "Xu hướng tăng"},
-}
-
-
-def _t(key: str) -> str:
-    """Translate a UI label key based on REPORT_LANGUAGE config."""
-    try:
-        lang = get_config().report_language or "en"
-    except Exception:
-        lang = "en"
-    translations = _I18N.get(key, {})
-    return translations.get(lang, translations.get("en", key))
+# Re-assign or import dictionary for local use if needed
+_I18N = I18N_DICT
 
 
 class NotificationChannel(Enum):
@@ -788,6 +730,7 @@ class NotificationService(
 
         # Advice-first lookup (exact match takes priority)
         advice_map = {
+            # Chinese
             '强烈买入': ('强烈买入', '💚', '强买'),
             '买入': ('买入', '🟢', '买入'),
             '加仓': ('买入', '🟢', '买入'),
@@ -796,6 +739,24 @@ class NotificationService(
             '减仓': ('减仓', '🟠', '减仓'),
             '卖出': ('卖出', '🔴', '卖出'),
             '强烈卖出': ('卖出', '🔴', '卖出'),
+            # Vietnamese
+            'Mua mạnh': ('Mua mạnh', '💚', 'Mua mạnh'),
+            'Mua': ('Mua', '🟢', 'Mua'),
+            'Tăng vị thế': ('Mua', '🟢', 'Mua'),
+            'Giữ': ('Giữ', '🟡', 'Giữ'),
+            'Theo dõi': ('Theo dõi', '⚪', 'Theo dõi'),
+            'Giảm vị thế': ('Giảm vị thế', '🟠', 'Giảm vị thế'),
+            'Bán': ('Bán', '🔴', 'Bán'),
+            'Bán mạnh': ('Bán mạnh', '🔴', 'Bán mạnh'),
+            # English
+            'Strong Buy': ('Strong Buy', '💚', 'Strong Buy'),
+            'Buy': ('Buy', '🟢', 'Buy'),
+            'Add Position': ('Buy', '🟢', 'Buy'),
+            'Hold': ('Hold', '🟡', 'Hold'),
+            'Watch/Wait': ('Watch', '⚪', 'Watch'),
+            'Reduce': ('Reduce', '🟠', 'Reduce'),
+            'Sell': ('Sell', '🔴', 'Sell'),
+            'Strong Sell': ('Sell', '🔴', 'Sell'),
         }
         if advice in advice_map:
             return advice_map[advice]
