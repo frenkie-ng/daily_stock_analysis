@@ -425,6 +425,10 @@ class Config:
     # 报告类型：simple(精简) 或 full(完整)
     report_type: str = "simple"
 
+    # 报告语言：en(English) | zh(中文) | vi(Tiếng Việt)
+    # REPORT_LANGUAGE env var; default 'en' so non-Chinese users get English output.
+    report_language: str = "en"
+
     # 仅分析结果摘要：true 时只推送汇总，不含个股详情（Issue #262）
     report_summary_only: bool = False
 
@@ -881,6 +885,7 @@ class Config:
             gemini_model_fallback=os.getenv('GEMINI_MODEL_FALLBACK', 'gemini-2.5-flash'),
             gemini_temperature=float(os.getenv('GEMINI_TEMPERATURE', '0.7')),
             gemini_request_delay=float(os.getenv('GEMINI_REQUEST_DELAY', '2.0')),
+            report_language=os.getenv('REPORT_LANGUAGE', 'en').strip().lower(),
             gemini_max_retries=int(os.getenv('GEMINI_MAX_RETRIES', '5')),
             gemini_retry_delay=float(os.getenv('GEMINI_RETRY_DELAY', '5.0')),
             anthropic_api_key=os.getenv('ANTHROPIC_API_KEY'),

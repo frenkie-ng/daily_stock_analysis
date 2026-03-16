@@ -805,10 +805,20 @@ class GeminiAnalyzer:
         for model in models_to_try:
             try:
                 model_short = model.split("/")[-1] if "/" in model else model
+                # Inject language instruction based on REPORT_LANGUAGE env var
+                _lang = config.report_language if hasattr(config, "report_language") else "en"
+                _lang_instructions = {
+                    "en": "\n\n## Output Language\nYou MUST write ALL text content in **English**. This includes all analysis, conclusions, recommendations, news summaries, risk alerts, and checklist items. Only keep stock codes and numeric values as-is.",
+                    "vi": "\n\n## Ngôn ngữ đầu ra\nBạn PHẢI viết TẤT CẢ nội dung văn bản bằng **tiếng Việt**. Bao gồm phân tích, kết luận, khuyến nghị, tóm tắt tin tức, cảnh báo rủi ro, và danh sách kiểm tra. Chỉ giữ nguyên mã cổ phiếu và giá trị số.",
+                    "zh": "",  # Original Chinese — no extra instruction needed
+                }
+                _lang_suffix = _lang_instructions.get(_lang, _lang_instructions["en"])
+                _system_prompt = self.SYSTEM_PROMPT + _lang_suffix
+
                 call_kwargs: Dict[str, Any] = {
                     "model": model,
                     "messages": [
-                        {"role": "system", "content": self.SYSTEM_PROMPT},
+                        {"role": "system", "content": _system_prompt},
                         {"role": "user", "content": prompt},
                     ],
                     "temperature": temperature,
